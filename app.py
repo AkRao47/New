@@ -1,77 +1,51 @@
-from PyPDF2 import PdfFileReader, PdfFileWriter
+from flask import Flask, request
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+import subprocess
 
-# Define your Telegram bot token
-TOKEN = '6371494303:AAGMaUGJltbs9rBI9p3jPX77rBfPGpahvnc'
+app = Flask(__name__)
+TOKEN = 'YOUR_BOT_TOKEN'
 
-# Dictionary to store user data
-user_data = {}
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), bot)
+    dp.process_update(update)
+    return '', 200
 
-# Step 1 - Set Serial and Combine PDFs
-def set_serial(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.from_user.id
-    user_data[user_id] = {'serial': update.message.text, 'pdfs': []}
-    update.message.reply_text(f'Serial set to {update.message.text}. Now send the PDFs you want to combine.')
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Welcome to the PDF Bot! Send me a PDF file to process.")
 
-def combine_pdfs(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.from_user.id
-    user_serial = user_data.get(user_id, {}).get('serial')
+def process_pdf(update: Update, context: CallbackContext) -> None:
+    # Save the received PDF file
+    file_id = update.message.document.file_id
+    file = context.bot.get_file(file_id)
+    file.download('input.pdf')
 
-    if not user_serial:
-        update.message.reply_text('Please set a serial using /setserial command first.')
-        return
+    # Extract the command argument (number of pages per side)
+    args = context.args
+    pages_per_side = int(args[0]) if args else 1  # Default to 1 page per side
 
-    pdf_files = context.user_data.setdefault(user_id, [])
-    document = PdfFileWriter()
+    # Run the pdftk commands based on the specified number of pages
+    cmd = ['pdftk', 'input.pdf', 'cat']
+    for i in range(1, pages_per_side + 1):
+        cmd.append(f'{i}')
 
-    for document_id in pdf_files:
-        document.addPage(PdfFileReader(document_id).getPage(0))
+    cmd.extend(['output', 'Side1.pdf'])
+    subprocess.run(cmd)
 
-    output_path = f'combined_{user_serial}.pdf'
-    with open(output_path, 'wb') as output_file:
-        document.write(output_file)
+    subprocess.run(['pdftk', 'A=Side1.pdf', 'B=input.pdf', 'cat', 'A', 'B', 'output', 'FinalOutput.pdf'])
 
-    update.message.reply_document(open(output_path, 'rb'), caption=f'Combined PDF with Serial: {user_serial}')
-    pdf_files.clear()
+    # Send the processed PDF back to the user
+    context.bot.send_document(chat_id=update.effective_chat.id, document=open('FinalOutput.pdf', 'rb'))
 
-# Step 2 - Write Page Number on Combined PDF
-def write_page_number(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.from_user.id
-    user_serial = user_data.get(user_id, {}).get('serial')
+if __name__ == '__main__':
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-    if not user_serial:
-        update.message.reply_text('Please set a serial using /setserial command first.')
-        return
+    # Handlers
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("processpdf", process_pdf, pass_args=True))
+    dp.add_handler(MessageHandler(Filters.document, process_pdf))
 
-    page_number = update.message.text
-    input_path = f'combined_{user_serial}.pdf'
-    output_path = f'numbered_combined_{user_serial}.pdf'
-
-    with open(input_path, 'rb') as input_file:
-        pdf_reader = PdfFileReader(input_file)
-        pdf_writer = PdfFileWriter()
-
-        for page in range(pdf_reader.getNumPages()):
-            pdf_writer.addPage(pdf_reader.getPage(page))
-            pdf_writer.getPage(page).mergePage(PdfFileReader(user_data[user_id]['pdfs'][0]).getPage(0))
-
-        pdf_writer.write(open(output_path, 'wb'))
-
-    update.message.reply_document(open(output_path, 'rb'), caption=f'Combined and Numbered PDF with Serial: {user_serial}')
-    user_data.pop(user_id, None)
-
-# Set up the Telegram bot
-updater = Updater(token=TOKEN, use_context=True)
-dispatcher = updater.dispatcher
-
-# Add command handlers
-dispatcher.add_handler(CommandHandler("setserial", set_serial))
-dispatcher.add_handler(CommandHandler("combinepdfs", combine_pdfs))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, write_page_number))
-
-# Start the bot
-updater.start_polling()
-
-# Keep the bot running
-updater.idle()
+    # Start the Flask app
+    app.run(threaded=True, port=5000)
