@@ -1,6 +1,6 @@
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 import subprocess
 
 app = Flask(__name__)
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # Handlers
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("processpdf", process_pdf, pass_args=True))
-    dp.add_handler(MessageHandler(filters.document, process_pdf))
+    dp.add_handler(MessageHandler(Filters.document, process_pdf))
 
     # Start the Flask app
     app.run(threaded=True, port=5000)
