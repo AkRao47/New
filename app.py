@@ -39,7 +39,7 @@ def process_pdf(update: Update, context: CallbackContext) -> None:
     context.bot.send_document(chat_id=update.effective_chat.id, document=open('FinalOutput.pdf', 'rb'))
 
 if __name__ == '__main__':
-    updater = Updater(TOKEN, use_context=True)
+    updater = Updater(6259718751:AAEjFAu83hn_tDDZS8-8kG5nMgDzR1vhviA, use_context=True)
     dp = updater.dispatcher
 
     # Handlers
