@@ -4,7 +4,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, filters, Callb
 import subprocess
 
 app = Flask(__name__)
-TOKEN = 'YOUR_BOT_TOKEN'
+TOKEN = "6259718751:AAEjFAu83hn_tDDZS8-8kG5nMgDzR1vhviA"
 
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
