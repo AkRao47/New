@@ -1,2 +1,2 @@
-python-telegram-bot==13.7
-PyPDF2==1.26.0
+python-telegram-bot==20.3
+flask
