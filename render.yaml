@@ -6,6 +6,6 @@ ervices:
     - key: FLASK_ENV
       value: production
     - key: TELEGRAM_BOT_TOKEN
-      value: 'YOUR_BOT_TOKEN'
+      value: '6259718751:AAEjFAu83hn_tDDZS8-8kG5nMgDzR1vhviA'
   github:
     branch: main
