@@ -1,0 +1,11 @@
+ervices:
+- name: telegram-pdf-bot
+  env:
+    - key: FLASK_APP
+      value: app.py
+    - key: FLASK_ENV
+      value: production
+    - key: TELEGRAM_BOT_TOKEN
+      value: 'YOUR_BOT_TOKEN'
+  github:
+    branch: main
